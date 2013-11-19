@@ -109,6 +109,8 @@ jQuery(document).ready(function($){
 		$('span.partials-total').html(new_amount);	
 	};
 	
-	
+	//attaching datepicker
+	$('#partial-payment-date').datepicker({dateFormat: 'dd/mm/yy'});
+	$('input[name="partial-payment-date[]"]').datepicker({dateFormat: 'dd/mm/yy'});
 	
 });

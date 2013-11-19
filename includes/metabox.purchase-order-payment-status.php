@@ -34,7 +34,7 @@
 	<?php if($partial_payment_info): foreach($partial_payment_info as $key => $info):	?>
 		
 		<div class="existing-payments-line">
-			<p> <?php echo $key+1; ?> <span><?php echo $info['date']; ?>  $<?php echo $info['amount']; ?>  <?php echo $info['type']; ?></span> <a class="existing-payments-line-edit" href="#">Edit</a> </p>
+			<p> <?php echo $key+1; ?>: <span><?php echo $info['date']; ?>  $<?php echo $info['amount']; ?>  <?php echo $info['type']; ?></span> <a class="existing-payments-line-edit" href="#">Edit</a> </p>
 			<div class="existing_partial_paypment-form">
 			<input placeholder="dd/mm/yyyy" type="text" name="partial-payment-date[]" value="<?php echo $info['date']; ?>" style="width: 42%" >
 			<input placeholder="amouont (USD)" type="text" name="partial-payment-amount[]" value="<?php echo $info['amount']; ?>" style="width: 42%" >
@@ -56,7 +56,8 @@
 		
 </div>
 
-<h4>TPD: $<span class="partials-total"><?php echo $paid_amount; ?></span> &nbsp; Left: $<span class="partials-left"><?php echo $left_amount; ?></span> &nbsp; <input name="purchase_order_payment_status" value="1" type="checkbox" value="y"> Paid</h4>
+<h4>TPD: $<span class="partials-total"><?php echo $paid_amount; ?></span> &nbsp; Left: $<span class="partials-left"><?php echo $left_amount; ?></span> &nbsp; 
+<input <?php checked(1, $status); ?> name="purchase_order_payment_status" value="1" type="checkbox" id="purchase_order_payment_status"><label for="purchase_order_payment_status">Paid</label></h4>
 
 <input type="hidden" name="order_total_amount" value="<?php echo $the_order->get_total(); ?>"  />
 

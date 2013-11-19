@@ -150,9 +150,7 @@ class WooPurchaseOrderPaymentStatus{
 				
 				$total_amount += (float) $_POST['partial-payment-amount'][$key];
 			}
-			
-			//var_dump($payment_details); exit;
-			
+						
 			//saving the payment info
 			update_post_meta($post_id, '_paid_amount', $total_amount);
 			update_post_meta($post_id, '_partial_payment_info', $payment_details);
