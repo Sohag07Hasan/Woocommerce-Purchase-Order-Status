@@ -38,7 +38,7 @@ jQuery(document).ready(function($){
 			
 			//now add new element			
 			var new_element = '<div class="existing-payments-line"> <p> %line_number%: %date%  $%amount%  %payment_type% <a class="existing-payments-line-edit" href="#">Edit</a> </p> <div class="existing_partial_paypment-form"><input placeholder="dd/mm/yyyy" type="text" name="partial-payment-date[]" value="%date%" style="width: 42%" > <input placeholder="amouont (USD)" type="text" name="partial-payment-amount[]" value="%amount%" style="width: 42%" >';
-			new_element += '<select name="partial-payment_paymenttype[]" style="width: 48%">';
+			new_element += '<select class="partial-payment-paymenttype" name="partial-payment-paymenttype[]" style="width: 48%">';
 			new_element += '<option value="">Select Payment Type</option>';
 			
 			var selected_payment_type = $('#partial-payment-paymenttype').val();
@@ -53,7 +53,7 @@ jQuery(document).ready(function($){
 				
 			});
 			
-			new_element += '</select> &nbsp;<input style="width: 20%" type="button" class="button button-secondary partial_payment_add" value="Ok" /> </div>	</div>';
+			new_element += '</select> <input type="hidden" name="partial-payment-paymenttype_tracking[]" value="%payment_type%" />  &nbsp;<input style="width: 20%" type="button" class="button button-secondary partial_payment_add" value="Ok" /> </div>	</div>';
 			
 			//now replacing with original values
 			new_element = new_element.replace(/%line_number%/g, $('div.existing-payments').children('div.existing-payments-line').length + 1);
@@ -73,6 +73,7 @@ jQuery(document).ready(function($){
 	$('a.existing-payments-line-edit').unbind('click');
 	$('a.existing-payments-line-edit').live('click', function(){
 		$(this).parent().siblings('div.existing_partial_paypment-form').slideDown();
+		return false;
 	});
 	
 	$('.partial_payment_add').unbind('click');
@@ -86,7 +87,13 @@ jQuery(document).ready(function($){
 		
 		return false;
 	});	
-		
+	
+	
+	//keep tracing on select box
+	$('.partial-payment-paymenttype').live('change', function(){
+		$(this).siblings('input[name="partial-payment-paymenttype_tracking[]"]').val($(this).val());
+	});
+	
 	
 	//update price
 	var update_price = function(){
@@ -98,5 +105,7 @@ jQuery(document).ready(function($){
 		
 		$('span.partials-total').html(new_amount);	
 	};
+	
+	
 	
 });

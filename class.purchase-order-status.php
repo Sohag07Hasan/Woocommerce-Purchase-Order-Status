@@ -93,112 +93,78 @@ class WooPurchaseOrderPaymentStatus{
 	
 	function woocommerce_process_shop_order_meta( $post_id, $post ){	
 		
-		//var_dump('hello'); exit;
-			
-			global $wpdb;
-			global $woocommerce;
+		global $wpdb, $woocommerce;
+		
 		if(isset($_POST['purchase_order_payment_status'])){
+			//get the previous status
+			$status = get_post_meta($post->ID, '_purchase_order_payment_status', true);
+			$is_paid = ($status == "1") ? true : false;
 			
-			update_post_meta($post_id, '_purchase_order_payment_status', '1');
-			
-			
+			update_post_meta($post_id, '_purchase_order_payment_status', '1');			
 			do_action('order_custom_paid_status', $post_id);
-			$dat = explode("-",$_POST['payment_date']);
-			$_date = $dat[2]."-".$dat[1]."-".$dat[0];
-			
-			
-			
-			if($_POST['pops'] == 1){
-			$order = new WC_Order( $post_id );
-
+						
+			if(!$is_paid){
+				
+				//update time
+				update_post_meta($post_id, '_purchase_order_payment_date', current_time('timestamp'));
+				
+				$order = new WC_Order( $post_id );
 				$woocommerce->woocommerce_email = $woocommerce->mailer();
 
-				//admin notification	
-					
+				//admin notification						
 				$woocommerce->woocommerce_email->emails['WC_Email_New_Order']->template_html ='emails/new-emails/admin-paid-status.php';
-
-				$woocommerce->woocommerce_email->emails['WC_Email_New_Order']->title = "New Payment";
-														
+				$woocommerce->woocommerce_email->emails['WC_Email_New_Order']->title = "New Payment";														
 				$woocommerce->woocommerce_email->emails['WC_Email_New_Order']->subject = sprintf("%s Made for %s from %s",  $order->payment_method_title, $order->get_order_number(), $order->billing_first_name . " " . $order->billing_last_name);
-
 				$woocommerce->woocommerce_email->emails['WC_Email_New_Order']->heading = sprintf('A new %s payment has been made - Keep an Eye out for it',  $order->payment_method_title);
-
 				$woocommerce->woocommerce_email->emails['WC_Email_New_Order']->trigger($post_id);
 				
-				//do_action('woocommerce_order_status_pending_to_processing_notification', array($woocommerce->woocommerce_email->emails['WC_Email_New_Order'], 'trigger', $this->id));
-
-
 				//customer notification
 				$woocommerce->woocommerce_email->emails['WC_Email_Customer_Processing_Order']->template_html = 'emails/new-emails/customer-paid-status.php';
-
 				$woocommerce->woocommerce_email->emails['WC_Email_Customer_Processing_Order']->recipient = $order->billing_email;
-
 				$woocommerce->woocommerce_email->emails['WC_Email_Customer_Processing_Order']->heading = 'Thank you for your payment';
-
 				$woocommerce->woocommerce_email->emails['WC_Email_Customer_Processing_Order']->subject = 'Thank you for your payment';
-
-				$woocommerce->woocommerce_email->emails['WC_Email_Customer_Processing_Order']->trigger($post_id);
-			
+				$woocommerce->woocommerce_email->emails['WC_Email_Customer_Processing_Order']->trigger($post_id);			
 			}
 			
 		}
 		else{
 			update_post_meta($post_id, '_purchase_order_payment_status', '0');
-			delete_post_meta($post_id, '_purchase_order_payment_date');
 		}
-		if (isset($_POST['payment_date']))
-		{
-		do_action('order_custom_paid_status', $post_id);
-			$dat = explode("-",$_POST['payment_date']);
-			$_date = $dat[2]."-".$dat[1]."-".$dat[0];
-			update_post_meta($post_id, '_purchase_order_payment_date', strtotime($_date));	
-		}
-		if(isset($_POST['paid_amount'])){
-			
-			do_action('order_custom_paid_status', $post_id);
-			$amt = $_POST['paid_amount'];
-			$wpdb->query($wpdb->prepare("UPDATE wp_followup_customer_orders 
-				SET price = ".$amt."
-				WHERE order_id = ".$post_id));
-		//update_post_meta($post_id, '_payment_method', $_POST['_payment_method']);
-		}
-		if(isset($_POST['paid_amt'])){
-			$amt = get_post_meta($post_id, '_paid_amount', true);
-			if(! isset($amt))
-			{
-			add_post_meta($post_id, '_paid_amount', $_POST['paid_amt']);	
-			}
-			else{
-			update_post_meta($post_id, '_paid_amount', $_POST['paid_amt']);	
-			}
-			$wpdb->query($wpdb->prepare("UPDATE wp_followup_customer_orders 
-				SET price = ".$_POST['paid_amt']."
-				WHERE order_id = ".$post_id));
-		}
-		if(isset($_POST['_payment_type'])){
 
-				/*$methods = $woocommerce->payment_gateways->payment_gateways();
-				$payment_method = woocommerce_clean( $_POST['_payment_method1'] );
-				$payment_method_title 	= $payment_method;
-		
-				if ( isset( $methods) && isset( $methods[ $payment_method ] ) )
-					$payment_method_title = $methods[ $payment_method ]->get_title();
-		
-				update_post_meta( $post_id, '_payment_method', $payment_method );
-				update_post_meta( $post_id, '_payment_method_title', $payment_method_title );	*/
-				//update_post_meta($post_id, '_payment_method', $_POST['_payment_method']);
-			$type = get_post_meta($post_id, '_payment_type_', true);
-			if(! isset($type))
-			{
-			add_post_meta($post_id, '_payment_type_', $_POST['_payment_type']);	
+		//saving the partial payment
+		if(count($_POST['partial-payment-date']) > 0){
+			
+			//var_dump($_POST['partial-payment-paymenttype']); exit;
+			
+			$payment_details = array();
+			$total_amount = 0;
+			
+			foreach($_POST['partial-payment-date'] as $key => $date){
+				if(empty($_POST['partial-payment-amount'][$key]) || empty($date)) continue;
+				
+				$payment_details[] = array(
+					'date' => $date,
+					'amount' => $_POST['partial-payment-amount'][$key],
+					'type' => $_POST['partial-payment-paymenttype_tracking'][$key]
+				);
+				
+				$total_amount += (int) $_POST['partial-payment-amount'][$key];
 			}
-			else{
-			update_post_meta($post_id, '_payment_type_', $_POST['_payment_type']);	
-			}	
+			
+			//var_dump($payment_details); exit;
+			
+			//saving the payment info
+			update_post_meta($post_id, '_paid_amount', $total_amount);
+			update_post_meta($post_id, '_partial_payment_info', $payment_details);
 		}
-		
 			
 	}	
+	
+	
+	function get_partial_payment_info($post_id){
+		return get_post_meta($post_id, '_partial_payment_info', true);
+	}
+	
 	
 	function woocommerce_edit_order_columns($columns){
 		$new_columns = array();

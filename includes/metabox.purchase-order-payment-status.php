@@ -17,31 +17,41 @@
 	$status = get_post_meta($post->ID, '_purchase_order_payment_status', true);
 	$status = ($status == "1") ? 1 : 0;	
 	$time_stamp = get_post_meta($post->ID, '_purchase_order_payment_date', true);
+	
+	$partial_payment_info = $this->get_partial_payment_info($post->ID);
+	
+	//var_dump($partial_payment_info);
+	
 ?>
 
 <div class="existing-payments">
-	<div class="existing-payments-line">
-		<p> 1: <span> 12/12/2013  $600.23 Bank Transer </span> <a class="existing-payments-line-edit" href="#">Edit</a></p>
+	
+	<?php if($partial_payment_info): foreach($partial_payment_info as $key => $info):	?>
 		
-		<div class="existing_partial_paypment-form">
-			<input placeholder="dd/mm/yyyy" type="text" name="partial-payment-date[]" value="" style="width: 42%" >
-			<input placeholder="amouont (USD)" type="text" name="partial-payment-amount[]" value="600.23" style="width: 42%" >
+		<div class="existing-payments-line">
+			<p> <?php echo $key+1; ?> <span><?php echo $info['date']; ?>  $<?php echo $info['amount']; ?>  <?php echo $info['type']; ?></span> <a class="existing-payments-line-edit" href="#">Edit</a> </p>
+			<div class="existing_partial_paypment-form">
+			<input placeholder="dd/mm/yyyy" type="text" name="partial-payment-date[]" value="<?php echo $info['date']; ?>" style="width: 42%" >
+			<input placeholder="amouont (USD)" type="text" name="partial-payment-amount[]" value="<?php echo $info['amount']; ?>" style="width: 42%" >
 			
-			<select name="partial-payment-paymenttype[]">
+			<select class="partial-payment-paymenttype" name="partial-payment-paymenttype[]">
 				<option value="">Select Payment Type</option>
-				<option value="Credit Card">Credit Card</option>
-				<option value="Bank Transfer">Bank Transfer</option>
-				<option value="Cheque">Cheque</option>
-				<option value="Cash">Cash</option>
-			</select> &nbsp;
-			<input style="width: 20%" type="button" class="button button-secondary partial_payment_add" value="Ok" />
+				<option <?php selected('Credit Card', $info['type']); ?> value="Credit Card">Credit Card</option>
+				<option <?php selected('Bank Transfer', $info['type']); ?> value="Bank Transfer">Bank Transfer</option>
+				<option <?php selected('Cheque', $info['type']); ?> value="Cheque">Cheque</option>
+				<option <?php selected('Cash', $info['type']); ?> value="Cash">Cash</option>
+			</select>
+			<input type="hidden" name="partial-payment-paymenttype_tracking[]" value="<?php echo $info['type']; ?>" /> 
+			&nbsp;<input style="width: 20%" type="button" class="button button-secondary partial_payment_add" value="Ok" />
 			
-		</div>				
-	</div>
+		</div>	
+		</div>
+		
+	<?php endforeach; endif; ?>
 		
 </div>
 
-<h4>TPD: $<span class="partials-total">700.46</span> &nbsp; Left: $<span class="partials-left">50.00</span> &nbsp; <input type="checkbox" value="y"> Paid</h4>
+<h4>TPD: $<span class="partials-total">700.46</span> &nbsp; Left: $<span class="partials-left">50.00</span> &nbsp; <input name="purchase_order_payment_status" value="1" type="checkbox" value="y"> Paid</h4>
 
 <p><input id="add_a_new_partial_payment" type="button" class="button button-primary" value="Add Payment"></p>
 
