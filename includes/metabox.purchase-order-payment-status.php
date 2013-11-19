@@ -6,6 +6,7 @@
 	
 	div.existing_partial_paypment-form{
 		display: none;
+		margin-left: 1.5em;
 	}
 	
 </style>
@@ -20,21 +21,21 @@
 
 <div class="existing-payments">
 	<div class="existing-payments-line">
-		<p> 1:  12/12/2013  $600.23 Bank Transer <a class="existing-payments-line-edit" href="#">Edit</a></p>
+		<p> 1: <span> 12/12/2013  $600.23 Bank Transer </span> <a class="existing-payments-line-edit" href="#">Edit</a></p>
 		
 		<div class="existing_partial_paypment-form">
-			<input placeholder="dd/mm/yyyy" type="text" name="partial-payment-date[]" value="" style="width: 48%" >
-			<input placeholder="amouont (USD)" type="text" name="partial-payment-amount[]" value="600.23" style="width: 48%" >
+			<input placeholder="dd/mm/yyyy" type="text" name="partial-payment-date[]" value="" style="width: 42%" >
+			<input placeholder="amouont (USD)" type="text" name="partial-payment-amount[]" value="600.23" style="width: 42%" >
 			
-			<select style="width: 48%" name="partial-payment-paymenttype[]">
+			<select name="partial-payment-paymenttype[]">
 				<option value="">Select Payment Type</option>
 				<option value="Credit Card">Credit Card</option>
 				<option value="Bank Transfer">Bank Transfer</option>
 				<option value="Cheque">Cheque</option>
 				<option value="Cash">Cash</option>
 			</select> &nbsp;
-			<input name="partial_payment_add" style="width: 20%" type="button" class="button button-secondary" value="Ok" />
-			<input name="partial_payment_cancel" style="width: 24%" type="button" class="button button-secondary" value="Cancel" /> 
+			<input style="width: 20%" type="button" class="button button-secondary partial_payment_add" value="Ok" />
+			
 		</div>				
 	</div>
 		

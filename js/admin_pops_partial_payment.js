@@ -37,17 +37,23 @@ jQuery(document).ready(function($){
 			}
 			
 			//now add new element			
-			var new_element = '<div class="existing-payments-line"> <p> %line_number%: %date%  $%amount%  %payment_type% <a class="existing-payments-line-edit" href="#">Edit</a> </p> <div class="existing_partial_paypment-form"><input placeholder="dd/mm/yyyy" type="text" name="partial-payment-date[]" value="%date%" style="width: 48%" > <input placeholder="amouont (USD)" type="text" name="partial-payment-amount[]" value="%amount%" style="width: 48%" >';
+			var new_element = '<div class="existing-payments-line"> <p> %line_number%: %date%  $%amount%  %payment_type% <a class="existing-payments-line-edit" href="#">Edit</a> </p> <div class="existing_partial_paypment-form"><input placeholder="dd/mm/yyyy" type="text" name="partial-payment-date[]" value="%date%" style="width: 42%" > <input placeholder="amouont (USD)" type="text" name="partial-payment-amount[]" value="%amount%" style="width: 42%" >';
 			new_element += '<select name="partial-payment_paymenttype[]" style="width: 48%">';
 			new_element += '<option value="">Select Payment Type</option>';
 			
 			var selected_payment_type = $('#partial-payment-paymenttype').val();
 			var payment_types = ['Credit Card', 'Bank Transfer', 'Cheque', 'Cash'];
 			$.each(payment_types, function(index, value){
-				new_element += '<option value="'+value+'" '+(value == selected_payment_type) ? 'selected="selected"' : '' +' >'+value+'</option>'
+				if(value == selected_payment_type){
+					new_element += '<option value="'+value+'" selected="selected">'+value+'</option>';
+				}
+				else{
+					new_element += '<option value="'+value+'">'+value+'</option>';
+				}
+				
 			});
 			
-			new_element += '</select> &nbsp;<input name="partial_payment_add" style="width: 20%" type="button" class="button button-secondary" value="Ok" /> <input name="partial_payment_cancel" style="width: 24%" type="button" class="button button-secondary" value="Cancel" /> </div>	</div>';
+			new_element += '</select> &nbsp;<input style="width: 20%" type="button" class="button button-secondary partial_payment_add" value="Ok" /> </div>	</div>';
 			
 			//now replacing with original values
 			new_element = new_element.replace(/%line_number%/g, $('div.existing-payments').children('div.existing-payments-line').length + 1);
@@ -56,13 +62,8 @@ jQuery(document).ready(function($){
 			new_element = new_element.replace(/%payment_type%/g, $('#partial-payment-paymenttype').val());
 			$('div.existing-payments').append(new_element);
 			
-			//now updating the total amouont
-			var new_amount = 0;
-			$.each($('input[name="partial-payment-amount[]"]'), function(index, field){
-				new_amount += Number($(field).val());
-			});
+			update_price();
 			
-			$('span.partials-total').html(new_amount);	
 		});
 		
 	});
@@ -73,5 +74,29 @@ jQuery(document).ready(function($){
 	$('a.existing-payments-line-edit').live('click', function(){
 		$(this).parent().siblings('div.existing_partial_paypment-form').slideDown();
 	});
+	
+	$('.partial_payment_add').unbind('click');
+	$('.partial_payment_add').live('click', function(){
+		var new_date = $(this).siblings('input[name="partial-payment-date[]"]').val();
+		var new_amount = $(this).siblings('input[name="partial-payment-amount[]"]').val();
+		var new_type = $(this).siblings('select[name="partial-payment-paymenttype[]"]').val();
+		$(this).parent().siblings('p').children('span').html( new_date + ' $' + new_amount + ' ' + new_type );
+		$(this).parent().slideUp();
+		update_price();
+		
+		return false;
+	});	
+		
+	
+	//update price
+	var update_price = function(){
+		//now updating the total amouont
+		var new_amount = 0;
+		$.each($('input[name="partial-payment-amount[]"]'), function(index, field){
+			new_amount += Number($(field).val());
+		});
+		
+		$('span.partials-total').html(new_amount);	
+	};
 	
 });
