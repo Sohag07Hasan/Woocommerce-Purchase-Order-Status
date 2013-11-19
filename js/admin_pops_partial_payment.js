@@ -103,6 +103,9 @@ jQuery(document).ready(function($){
 			new_amount += Number($(field).val());
 		});
 		
+		var left_amount = Number($('input[name="order_total_amount"]').val()) - new_amount;
+		
+		$('span.partials-left').html(left_amount);
 		$('span.partials-total').html(new_amount);	
 	};
 	

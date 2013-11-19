@@ -18,7 +18,12 @@
 	$status = ($status == "1") ? 1 : 0;	
 	$time_stamp = get_post_meta($post->ID, '_purchase_order_payment_date', true);
 	
-	$partial_payment_info = $this->get_partial_payment_info($post->ID);
+	$partial_payment_info = $this->get_partial_payment_info($post->ID);	
+	$paid_amount = get_post_meta($post->ID, '_paid_amount', true);
+	$paid_amount = number_format( (double) $paid_amount, 2, '.', '' );
+	
+	$the_order = new WC_Order($post->ID);
+	$left_amount = $the_order->get_total() - $paid_amount;
 	
 	//var_dump($partial_payment_info);
 	
@@ -51,7 +56,9 @@
 		
 </div>
 
-<h4>TPD: $<span class="partials-total">700.46</span> &nbsp; Left: $<span class="partials-left">50.00</span> &nbsp; <input name="purchase_order_payment_status" value="1" type="checkbox" value="y"> Paid</h4>
+<h4>TPD: $<span class="partials-total"><?php echo $paid_amount; ?></span> &nbsp; Left: $<span class="partials-left"><?php echo $left_amount; ?></span> &nbsp; <input name="purchase_order_payment_status" value="1" type="checkbox" value="y"> Paid</h4>
+
+<input type="hidden" name="order_total_amount" value="<?php echo $the_order->get_total(); ?>"  />
 
 <p><input id="add_a_new_partial_payment" type="button" class="button button-primary" value="Add Payment"></p>
 
