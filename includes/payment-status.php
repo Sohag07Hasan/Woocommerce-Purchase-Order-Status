@@ -3,7 +3,8 @@
 			'paid' => __('Paid'),
 			'unpaid' => __('Not Paid'),
 			'opaid' => __('Over Paid'),
-			'upaid' => __('Under Paid')
+			'upaid' => __('Under Paid'),
+			'payments' => __('Payments')
 			);
 	
 	$page_url = admin_url('admin.php?page=woocommerce-payment-status');
@@ -33,6 +34,9 @@
 		}
 		elseif (isset($_GET['tab']) && $_GET['tab'] == 'upaid'){
 			include $this->get_this_directory() . 'includes/tabs/upaid.php';	
+		}
+		elseif (isset($_GET['tab']) && $_GET['tab'] == 'payments'){
+			include $this->get_this_directory() . 'includes/tabs/payments.php';
 		}
 		else{
 			include $this->get_this_directory() . 'includes/tabs/paid.php';
