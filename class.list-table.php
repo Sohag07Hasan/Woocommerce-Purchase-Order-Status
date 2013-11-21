@@ -88,7 +88,21 @@ class WooPaymentStatusListTable extends WP_List_Table{
 					'paid_tax' => __('Paid Tax')
 
 			);	
-		}  elseif($_REQUEST['tab'] == "unpaid") {
+		} elseif($_REQUEST['tab'] == "payments") {
+			$columns = array(
+					'cb' => '<input type="checkbox" />',
+					'order' => __('Order'),
+					'email' => __('Email'),
+					'phone' => __('Phone'),
+					'name' => __('Name'),
+					'total' => __('Order Total'),
+					'tax' => __('Tax'),
+					'payment_details' => __('Payment Details'),
+					'paid_amount' => __('Paid Amount'),
+					'paid_tax' => __('Paid Tax')
+
+			);	
+		} elseif($_REQUEST['tab'] == "unpaid") {
 			$columns = array(
 					'cb' => '<input type="checkbox" />',
 					'order' => __('Order'),
@@ -188,28 +202,20 @@ class WooPaymentStatusListTable extends WP_List_Table{
 		// If Payment type is selected 
 		$__payment_type = array();
 		
-			if($this->status == 'unpaid'){
-				$args = $this->get_args_for_not_paid_latest();
-			}
-			else{
-				$args = $this->get_args_for_paid();
-			}
-			$query = new WP_Query($args);
+		if($this->status == 'unpaid'){
+			$args = $this->get_args_for_not_paid_latest();
+		}
+		elseif($this->status = 'payments'){
+			$args = $this->get_args_for_payments();
+		}
+		else{
+			$args = $this->get_args_for_paid();
+		}
+		$query = new WP_Query($args);
+		
+		//var_dump($query->request);
 			
-			//var_dump($query->request);
-			
-			
-		/*if($_GET['tab'] != 'unpaid') {
-		} else {
-			$args = $this->get_args_for_not_paid();
-			$query = query_posts($args);
-		}*/
-
-		/*echo date('Y-m-d' ,'1381968000');
-		echo date('Y-m-d' ,'1383004800');*/
-		/*echo "<pre>";
-		print_r($query);
-		echo "</pre>";*/
+		
 		$this->total_items = $query->found_posts;
 		$this->_set_pagination_parameters();
 		//var_dump($order_ids->request);
@@ -299,7 +305,38 @@ class WooPaymentStatusListTable extends WP_List_Table{
 									);
 						}
 
-					} else {
+					} 
+					
+					elseif($_REQUEST['tab'] == "payments"){
+						global $woo_purchase_status;
+						$partial_payment_info = $woo_purchase_status->get_partial_payment_info($_order->id);
+						if(!$partial_payment_info){
+							$partial_payment_info = array();
+						}
+						
+						$sanitized_info = array();
+						foreach ($partial_payment_info as $key => $info){
+							$sanitized_info[] = $key + 1 . ' ' . $info['date'] . ' $' . $info['amount'] . ' ' . $info['type'];
+						}
+						
+						$sanitized_data[] = array(
+								'ID' => $_order->id,
+								'order' => '<a href="' . admin_url( 'post.php?post=' . absint( $_order->id ) . '&action=edit' ) . '"><strong>' . sprintf( __( 'Order %s', 'woocommerce' ), esc_attr( $_order->get_order_number() ) ) . '</strong></a> ',
+								'email' => $_order->billing_email,
+								'name' => $_order->billing_first_name . ' ' . $_order->billing_last_name,
+								'phone' => $_order->billing_phone,
+								'total' => $_order->get_formatted_order_total(),
+								'tax' => woocommerce_price($_order->get_total_tax()),
+								//'payment_details' => implode('<br/>', $sanitized_info),
+								'payment_details' => $partial_payment_info,
+								'paid_amount' => "$".$_order->order_custom_fields['_paid_amount'][0],
+								'paid_tax'	=> "$".number_format( $paid_tax_calc , 2 ),
+								'amount_ptd'	=> "$".$_order->order_custom_fields['_paid_amount'][0],
+								'difference_ptd'	=> $difference_ptd
+						);
+					} 
+					
+					else {
 						
 						$paid_date = date('d-m-Y', $_order->order_custom_fields['_purchase_order_payment_date'][0]);
 						$difference_ptd = 0;
@@ -363,197 +400,7 @@ class WooPaymentStatusListTable extends WP_List_Table{
 		</table>";
 		return $sanitized_data;
 	}
-	
-	function get_args_for_not_paid() {
 
-		// If Start date, End date and Order status are set
-		if( isset($_REQUEST['start-date']) && isset($_REQUEST['end-date']) && isset($_REQUEST['order_status']) ){
-			$term_data = get_term_by( "slug", $_REQUEST['order_status'], "shop_order_status", ARRAY_A);
-			$st_dt = explode("-",$_REQUEST['start-date']);
-			$ed_dt = explode("-",$_REQUEST['end-date']);
-			$start = $st_dt[2]."-".$st_dt[1]."-".$st_dt[0]." 00:00:00";
-			$end = $ed_dt[2]."-".$ed_dt[1]."-".$ed_dt[0]." 23:59:59";
-			$args = "SELECT   wp_posts.ID FROM wp_posts  INNER JOIN wp_term_relationships ON (wp_posts.ID = wp_term_relationships.object_id) INNER JOIN wp_postmeta ON (wp_posts.ID = wp_postmeta.post_id) WHERE 1=1  AND ( wp_term_relationships.term_taxonomy_id IN ($term_data[term_id]) ) AND wp_posts.post_type = 'shop_order' AND (wp_posts.post_status = 'publish') AND ( (wp_postmeta.meta_key = '_purchase_order_payment_status' AND CAST(wp_postmeta.meta_value AS CHAR) != '1') ) AND wp_posts.post_date BETWEEN '$start' AND '$end' GROUP BY wp_posts.ID ORDER BY wp_posts.post_date DESC ";
-			/*$args = array(
-				'post_type' => 'shop_order',
-				'posts_per_page' => $this->per_page,
-				'paged' => $this->current_page,
-				'tax_query' => array(
-					array(
-						'taxonomy' => 'shop_order_status',
-						'field' => 'slug',
-						'terms' => $_REQUEST['order_status']
-					)),
-				'meta_query' => array(
-						array(
-								'key' => '_purchase_order_payment_date',
-            					'value' => array( strtotime($start) , strtotime($end)),
-            					'compare' => 'BETWEEN',
-            					'type' => 'UNSIGNED'
-
-							),
-
-						array(
-								'key' => '_purchase_order_payment_status',
-								'value' => '1',
-								'compare' => $this->status == 'paid' ? '=' : '!='
-							)
-
-
-						),
-				'fields' => 'ids',
-				'post_status' => 'publish'
-				);*/
-		} // If only Start and End dates are selected. It will return the results for default status
-		elseif ( isset( $_REQUEST['start-date'] ) && isset( $_REQUEST['end-date'] ) ){
-			
-			$st_dt = explode("-",$_REQUEST['start-date']);
-			$ed_dt = explode("-",$_REQUEST['end-date']);
-			$start = $st_dt[2]."-".$st_dt[1]."-".$st_dt[0]." 00:00:00";
-			$end = $ed_dt[2]."-".$ed_dt[1]."-".$ed_dt[0]." 23:59:59";
-			//print_r($strt);
-			$args = "SELECT wp_posts.ID FROM wp_posts  INNER JOIN wp_postmeta ON (wp_posts.ID = wp_postmeta.post_id) WHERE 1=1  AND wp_posts.post_type = 'shop_order' AND (wp_posts.post_status = 'publish') AND ( (wp_postmeta.meta_key = '_purchase_order_payment_status' AND CAST(wp_postmeta.meta_value AS CHAR) != '1') ) AND wp_posts.post_date BETWEEN '$start' AND '$end' GROUP BY wp_posts.ID ORDER BY wp_posts.post_date DESC";
-			/*$args = array(
-				'post_type' => 'shop_order',
-				'posts_per_page' => $this->per_page,
-				'paged' => $this->current_page,
-				'meta_query' => array(
-						array(
-								'key' => '_purchase_order_payment_status',
-								'value' => '1',
-								'compare' => $this->status == 'paid' ? '=' : '!='
-
-							),
-						array(
-								'key' => '_purchase_order_payment_date',
-            					'value' => array( strtotime($start) , strtotime($end)),
-            					'compare' => 'BETWEEN',
-            					'type' => 'UNSIGNED'
-
-							)
-						),
-				'fields' => 'ids',
-				'post_status' => 'publish'
-				);*/
-		} // Start data and Order status are set
-		elseif ( isset($_REQUEST['start-date']) && isset($_REQUEST['order_status']) ) {
-			$term_data = get_term_by( "slug", $_REQUEST['order_status'], "shop_order_status", ARRAY_A);
-
-			$st_dt = explode("-",$_REQUEST['start-date']);
-			$start = $st_dt[2]."-".$st_dt[1]."-".$st_dt[0]." 00:00:00";
-			$end = $st_dt[2]."-".$st_dt[1]."-".$st_dt[0]." 23:59:59";
-			
-			//print_r($strt);
-			$args = "SELECT   wp_posts.ID FROM wp_posts  INNER JOIN wp_term_relationships ON (wp_posts.ID = wp_term_relationships.object_id) INNER JOIN wp_postmeta ON (wp_posts.ID = wp_postmeta.post_id) WHERE 1=1  AND ( wp_term_relationships.term_taxonomy_id IN ($term_data[term_id]) ) AND wp_posts.post_type = 'shop_order' AND (wp_posts.post_status = 'publish') AND ( (wp_postmeta.meta_key = '_purchase_order_payment_status' AND CAST(wp_postmeta.meta_value AS CHAR) != '1') ) AND wp_posts.post_date BETWEEN '$start' AND '$end' GROUP BY wp_posts.ID ORDER BY wp_posts.post_date DESC ";
-			/*$args = array(
-				'post_type' => 'shop_order',
-				'posts_per_page' => $this->per_page,
-				'paged' => $this->current_page,
-				'tax_query' => array(
-					array(
-						'taxonomy' => 'shop_order_status',
-						'field' => 'slug',
-						'terms' => $_REQUEST['order_status']
-					)),
-				'meta_query' => array(
-						array(
-								'key' => '_purchase_order_payment_status',
-								'value' => '1',
-								'compare' => $this->status == 'paid' ? '=' : '!='
-
-							),
-						array(
-								'key' => '_purchase_order_payment_date',
-            					'value' => array( strtotime($start) , strtotime($end)),
-            					'compare' => 'BETWEEN',
-            					'type' => 'UNSIGNED'
-
-							)
-						),
-				'fields' => 'ids',
-				'post_status' => 'publish'
-				);*/
-		} // Only order status is selected
-		elseif ( isset($_REQUEST['order_status']) ) {
-			$term_data = get_term_by( "slug", $_REQUEST['order_status'], "shop_order_status", ARRAY_A);
-			
-			$args = "SELECT   wp_posts.ID FROM wp_posts  INNER JOIN wp_term_relationships ON (wp_posts.ID = wp_term_relationships.object_id) INNER JOIN wp_postmeta ON (wp_posts.ID = wp_postmeta.post_id) WHERE 1=1  AND ( wp_term_relationships.term_taxonomy_id IN ($term_data[term_id]) ) AND wp_posts.post_type = 'shop_order' AND (wp_posts.post_status = 'publish') AND ( (wp_postmeta.meta_key = '_purchase_order_payment_status' AND CAST(wp_postmeta.meta_value AS CHAR) != '1') ) GROUP BY wp_posts.ID ORDER BY wp_posts.post_date DESC ";
-			/*$args = array(
-				'post_type' => 'shop_order',
-				'posts_per_page' => $this->per_page,
-				'paged' => $this->current_page,
-				//'category_name' => $_REQUEST['order_status'],
-				'tax_query' => array(
-					array(
-						'taxonomy' => 'shop_order_status',
-						'field' => 'slug',
-						'terms' => $_REQUEST['order_status']
-					)),
-				'meta_query' => array(
-						array(
-								'key' => '_purchase_order_payment_status',
-								'value' => '1',
-								'compare' => $this->status == 'paid' ? '=' : '!='
-								)
-						),
-				'fields' => 'ids',
-				'post_status' => 'publish'
-				);*/
-		} // Only start data is selected
-		elseif( isset($_REQUEST['start-date']) ) {
-			$start = $st_dt[2]."-".$st_dt[1]."-".$st_dt[0]." 00:00:00";
-			$end = $st_dt[2]."-".$st_dt[1]."-".$st_dt[0]." 23:59:59";
-
-			$args = "SELECT wp_posts.ID FROM wp_posts  INNER JOIN wp_postmeta ON (wp_posts.ID = wp_postmeta.post_id) WHERE 1=1  AND wp_posts.post_type = 'shop_order' AND (wp_posts.post_status = 'publish') AND ( (wp_postmeta.meta_key = '_purchase_order_payment_status' AND CAST(wp_postmeta.meta_value AS CHAR) != '1') ) AND wp_posts.post_date BETWEEN '$start' AND '$end' GROUP BY wp_posts.ID ORDER BY wp_posts.post_date DESC";
-
-			/*$st_dt = explode("-",$_REQUEST['start-date']);
-			$start = $st_dt[2]."-".$st_dt[1]."-".$st_dt[0]." 00:00:00";
-			$end = $st_dt[2]."-".$st_dt[1]."-".$st_dt[0]." 23:59:59";
-			$args = array(
-				'post_type' => 'shop_order',
-				'posts_per_page' => $this->per_page,
-				'paged' => $this->current_page,
-				'meta_query' => array(
-						array(
-								'key' => '_purchase_order_payment_status',
-								'value' => '1',
-								'compare' => $this->status == 'paid' ? '=' : '!='
-
-							),
-						array(
-								'key' => '_purchase_order_payment_date',
-            					'value' => array( strtotime($start) , strtotime($end)),
-            					'compare' => 'BETWEEN',
-            					'type' => 'UNSIGNED'
-
-							)
-						),
-				'fields' => 'ids',
-				'post_status' => 'publish'
-				);*/
-		} // If nothing selected
-		else {
-			$args = "SELECT wp_posts.ID FROM wp_posts  INNER JOIN wp_postmeta ON (wp_posts.ID = wp_postmeta.post_id) WHERE 1=1  AND wp_posts.post_type = 'shop_order' AND (wp_posts.post_status = 'publish') AND ( (wp_postmeta.meta_key = '_purchase_order_payment_status' AND CAST(wp_postmeta.meta_value AS CHAR) != '1') ) GROUP BY wp_posts.ID ORDER BY wp_posts.post_date DESC";
-			/*$args = array(
-				'post_type' => 'shop_order',
-				'posts_per_page' => $this->per_page,
-				'paged' => $this->current_page,
-				'meta_query' => array(
-						array(
-								'key' => '_purchase_order_payment_status',
-								'value' => '1',
-								'compare' => $this->status == 'paid' ? '=' : '!='
-
-							)
-						),
-				'fields' => 'ids',
-				'post_status' => 'publish'
-				);*/
-		}
-
-		return $args;
-	}
-	
 	
 	/**
 	 * query arguments for not paid
@@ -627,6 +474,48 @@ class WooPaymentStatusListTable extends WP_List_Table{
 		return $args;
 	}
 	
+	
+	/**
+	 * query arguments for payments
+	 * */
+	function get_args_for_payments(){
+			
+		$args = array(
+					
+				'post_type' => 'shop_order',
+				'posts_per_page' => $this->per_page,
+				'paged' => $this->current_page,
+				'fields' => 'ids',
+				'post_status' => 'publish'	
+			
+		);
+	
+		if(isset($_REQUEST['order_status'])){
+			$args['tax_query'][] = array(
+					'taxonomy' => 'shop_order_status',
+					'field' => 'slug',
+					'terms' => $_REQUEST['order_status']
+			);
+		}
+	
+		if(isset($_REQUEST['start-date']) || isset($_REQUEST['end-date'])){
+			add_filter( 'posts_where', array(&$this, 'posts_where') );
+		}
+	
+	
+		// If payment type is selected
+		if( !empty($__payment_type) ) array_push($args['meta_query'], $__payment_type);
+	
+	
+		if(isset($_GET['orderby'])){
+			$args = $this->get_order_by($args);
+		}
+	
+	
+		//var_dump($args); //exit;
+	
+		return $args;
+	}
 	
 	function posts_where($where){
 		
@@ -922,8 +811,11 @@ class WooPaymentStatusListTable extends WP_List_Table{
 			case 'paid_amount':
 			case 'paid_tax':
 			case 'amount_ptd':
-			case 'difference_ptd':
+			case 'difference_ptd':			
 				return $item[$column_name];
+				break;
+			case 'payment_details':
+				return $this->payment_details($item[$column_name]);
 				break;
 			default:
 				var_dump($item);
@@ -931,6 +823,20 @@ class WooPaymentStatusListTable extends WP_List_Table{
 		}
 	}
 	
+	function payment_details($payment_details){
+		if(count($payment_details) > 0){
+			foreach($payment_details as $key => $info){
+				echo '<p class="payment_info">';
+				echo $key + 1;
+				echo ': ' . woocommerce_price($info['amount']) . ' ';
+				echo $info['date'] . '<br/>' . $info['type'] ;
+				echo '</p>';
+			}
+		}
+		else{
+			echo 'No partial paypment';
+		}
+	}
 	
 	//bulk actions initialization
 	function get_bulk_actions() {

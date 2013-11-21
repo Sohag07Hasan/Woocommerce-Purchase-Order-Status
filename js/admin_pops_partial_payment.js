@@ -113,4 +113,12 @@ jQuery(document).ready(function($){
 	$('#partial-payment-date').datepicker({dateFormat: 'dd/mm/yy'});
 	$('input[name="partial-payment-date[]"]').datepicker({dateFormat: 'dd/mm/yy'});
 	
+	
+	/*
+	//list table effect
+	$('.payment_info').live('hover', function(){
+		$(this).children('span').show();
+	});
+	*/
+	
 });

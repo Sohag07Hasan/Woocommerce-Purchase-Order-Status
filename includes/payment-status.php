@@ -1,3 +1,10 @@
+<style>
+	.payment_info{
+		padding: .2em;
+		border: .1em solid #4D4D4D;
+	}
+</style>
+
 <?php 
 	$tabs = array(
 			'paid' => __('Paid'),

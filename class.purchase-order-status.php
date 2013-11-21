@@ -464,9 +464,13 @@ class WooPurchaseOrderPaymentStatus{
 	function ready_to_ship_icon() {
        	echo "<style type=\"text/css\"> mark.ready-to-ship { background: #f00 !important; } </style>";
        	
+       	global $post; 
+
+       	if($post->post_type == 'shop_order'){
        	//enqueue script for purchase payment metabox
-       	wp_register_script('pops_partial_payment_js', $this->get_uri() . 'js/admin_pops_partial_payment.js', array('jquery'));
-       	wp_enqueue_script('pops_partial_payment_js');
+       		wp_register_script('pops_partial_payment_js', $this->get_uri() . 'js/admin_pops_partial_payment.js', array('jquery'), 2.0, true);
+       		wp_enqueue_script('pops_partial_payment_js');
+       	}
        	
     }
 	
