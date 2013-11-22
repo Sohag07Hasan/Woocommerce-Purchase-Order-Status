@@ -97,7 +97,9 @@ class WooPaymentStatusListTable extends WP_List_Table{
 					'name' => __('Name'),
 					'total' => __('Order Total'),
 					'tax' => __('Tax'),
-					'payment_details' => __('Payment Details'),
+					'payment_no' => __('Payment No'),
+					'payment_type' => 'Payment Type',
+					'payment_date' => 'Date',
 					'paid_amount' => __('Paid Amount'),
 					'paid_tax' => __('Paid Tax')
 
@@ -315,11 +317,54 @@ class WooPaymentStatusListTable extends WP_List_Table{
 						}
 						
 						$sanitized_info = array();
-						foreach ($partial_payment_info as $key => $info){
-							$sanitized_info[] = $key + 1 . ' ' . $info['date'] . ' $' . $info['amount'] . ' ' . $info['type'];
-						}
+												
+						$partial_payments = $woo_purchase_status->get_partial_payment();
+						$partial_payment_info = $partial_payments->get_payments_by('order_id', $_order->id);
 						
-						$sanitized_data[] = array(
+						
+						if($partial_payment_info){
+							foreach($partial_payment_info as $key => $info){
+								$payment_number = $key+1 . '/' . count($partial_payment_info);
+								if($key == 0){
+									$sanitized_data[] = array(
+										'ID' => $_order->id,
+										'order' => '<a href="' . admin_url( 'post.php?post=' . absint( $_order->id ) . '&action=edit' ) . '"><strong>' . sprintf( __( 'Order %s', 'woocommerce' ), esc_attr( $_order->get_order_number() ) ) . '</strong></a> ',
+										'email' => $_order->billing_email,
+										'name' => $_order->billing_first_name . ' ' . $_order->billing_last_name,
+										'phone' => $_order->billing_phone,
+										'total' => $_order->get_formatted_order_total(),
+										'tax' => woocommerce_price($_order->get_total_tax()),
+										//'payment_details' => implode('<br/>', $sanitized_info),
+										'payment_no' => $payment_number,
+										'payment_type' => $info->type,
+										'payment_date' => date('d/m/Y', strtotime($info->date)),
+										'paid_tax'	=> 'need instructions',
+										'paid_amount'	=> woocommerce_price($info->amount),
+									
+									);
+								}
+								else{
+									$sanitized_data[] = array(
+										'ID' => '',
+										'order' => '',
+										'email' => '',
+										'name' => '',
+										'phone' => '',
+										'total' => '',
+										'tax' => '',
+										//'payment_details' => implode('<br/>', $sanitized_info),
+										'payment_no' => $payment_number,
+										'payment_type' => $info->type,
+										'payment_date' => date('d/m/Y', strtotime($info->date)),
+										'paid_tax'	=> 'need instructions',
+										'paid_amount'	=> woocommerce_price($info->amount),
+												
+									);
+								}
+							}
+						}
+						else{						
+							$sanitized_data[] = array(
 								'ID' => $_order->id,
 								'order' => '<a href="' . admin_url( 'post.php?post=' . absint( $_order->id ) . '&action=edit' ) . '"><strong>' . sprintf( __( 'Order %s', 'woocommerce' ), esc_attr( $_order->get_order_number() ) ) . '</strong></a> ',
 								'email' => $_order->billing_email,
@@ -328,13 +373,15 @@ class WooPaymentStatusListTable extends WP_List_Table{
 								'total' => $_order->get_formatted_order_total(),
 								'tax' => woocommerce_price($_order->get_total_tax()),
 								//'payment_details' => implode('<br/>', $sanitized_info),
-								'payment_details' => $partial_payment_info,
-								'paid_amount' => "$".$_order->order_custom_fields['_paid_amount'][0],
-								'paid_tax'	=> "$".number_format( $paid_tax_calc , 2 ),
-								'amount_ptd'	=> "$".$_order->order_custom_fields['_paid_amount'][0],
-								'difference_ptd'	=> $difference_ptd
-						);
-					} 
+								'payment_no' => 'N/A',
+								'payment_type' => 'N/A',
+								'payment_date' => 'N/A',
+								'paid_tax'	=> woocommerce_price(0),
+								'paid_amount'	=> woocommerce_price(0),
+								
+							);
+						} 
+					}
 					
 					else {
 						
@@ -789,6 +836,7 @@ class WooPaymentStatusListTable extends WP_List_Table{
 	
 	/* checkbox for bulk action*/
 	function column_cb($item) {
+		if(empty($item['ID'])) return '';
 		return sprintf(
 			'<input type="checkbox" name="order_id[]" value="%s" />', $item['ID']
 		);
@@ -811,7 +859,10 @@ class WooPaymentStatusListTable extends WP_List_Table{
 			case 'paid_amount':
 			case 'paid_tax':
 			case 'amount_ptd':
-			case 'difference_ptd':			
+			case 'difference_ptd':
+			case 'payment_type':
+			case 'payment_no':
+			case 'payment_date':		
 				return $item[$column_name];
 				break;
 			case 'payment_details':
@@ -943,19 +994,6 @@ class WooPaymentStatusListTable extends WP_List_Table{
 					jQuery("#paid_tax").css("width","80px");
 					jQuery("#diff2").css("width","80px");
 					jQuery("#diff1").css("width","80px");
-
-					/*jQuery("#order").css("font-size","9px");
-					jQuery("#email").css("font-size","9px");
-					jQuery("#phone").css("font-size","9px");
-					jQuery("#name").css("font-size","9px");
-					jQuery("#total").css("font-size","9px");
-					jQuery("#tax").css("font-size","9px");
-					jQuery("#payment_type").css("font-size","9px");
-					jQuery("#paid_date").css("font-size","9px");
-					jQuery("#paid_amount").css("font-size","9px");
-					jQuery("#paid_tax").css("font-size","9px");
-					jQuery("#diff2").css("font-size","9px");
-					jQuery("#diff1").css("font-size","9px");*/
 
 					jQuery(".manage-column").css("font-size", "9px");
 

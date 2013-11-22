@@ -61,7 +61,7 @@ class WooPartialPayments{
 	 * @column column name of the parital payment table
 	 * @value, value of the column
 	 * */
-	function get_payments_by($column, $value, $output_type = 'OBJETCT'){
+	function get_payments_by($column, $value, $output_type = 'OBJECT'){
 		$sql = "select * from $this->db_table where $column like '$value'";
 		return $this->wpdb->get_results($sql, $output_type);
 	}
