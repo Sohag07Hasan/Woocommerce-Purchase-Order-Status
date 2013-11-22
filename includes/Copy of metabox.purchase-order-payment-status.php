@@ -18,10 +18,7 @@
 	$status = ($status == "1") ? 1 : 0;	
 	$time_stamp = get_post_meta($post->ID, '_purchase_order_payment_date', true);
 	
-	//$partial_payment_info = $this->get_partial_payment_info($post->ID);	
-	$partial_payments = $this->get_partial_payment();
-	$partial_payment_info = $partial_payments->get_payments_by('order_id', $post->ID, 'ARRAY_A');
-		
+	$partial_payment_info = $this->get_partial_payment_info($post->ID);	
 	$paid_amount = get_post_meta($post->ID, '_paid_amount', true);
 	$paid_amount = number_format( (double) $paid_amount, 2, '.', '' );
 	

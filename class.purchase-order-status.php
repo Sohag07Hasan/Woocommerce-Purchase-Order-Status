@@ -7,6 +7,8 @@
 
 class WooPurchaseOrderPaymentStatus{
 	
+	var $partial_payments;
+	
 	function __construct(){
 		//add a metabox in order details page
 		add_action( 'add_meta_boxes', array(&$this, 'woocommerce_meta_boxes' ));
@@ -58,6 +60,8 @@ class WooPurchaseOrderPaymentStatus{
 		//stop email notification
 		add_action('woocommerce_process_shop_order_meta', array(&$this, 'woocommerce_process_shop_order_meta_remove_hooks'), 2, 2);
 				
+		//holding the partial payment info
+		register_activation_hook(__FILE__, array(&$this, 'activate_plugin'));
 	}
 	
 	
@@ -134,7 +138,11 @@ class WooPurchaseOrderPaymentStatus{
 		//saving the partial payment
 		if(count($_POST['partial-payment-date']) > 0){
 			
-			//var_dump($_POST['partial-payment-paymenttype']); exit;
+			//partial payment object
+			$partial_payments = $this->get_partial_payment();
+			
+			delete_post_meta($post_id, '_partial_payment_info');
+			$partial_payments->delete('order_id', $post_id);
 			
 			$payment_details = array();
 			$total_amount = 0;
@@ -142,11 +150,16 @@ class WooPurchaseOrderPaymentStatus{
 			foreach($_POST['partial-payment-date'] as $key => $date){
 				if(empty($_POST['partial-payment-amount'][$key]) || empty($date)) continue;
 				
-				$payment_details[] = array(
-					'date' => $date,
+				$data = array(
+					'date' => date('Y-m-d', strtotime(str_replace('/', '-', $date))),
 					'amount' => (float) $_POST['partial-payment-amount'][$key],
 					'type' => $_POST['partial-payment-paymenttype_tracking'][$key]
 				);
+				
+				$payment_details[] = $data;
+				$data['order_id'] = $post_id;
+				//saving partial payments
+				$partial_payments->insert($data);
 				
 				$total_amount += (float) $_POST['partial-payment-amount'][$key];
 			}
@@ -472,6 +485,26 @@ class WooPurchaseOrderPaymentStatus{
        		wp_enqueue_script('pops_partial_payment_js');
        	}
        	
+    }
+    
+    
+    //during activation of the pluign
+    function activate_plugin(){
+	  	$partial_payments = $this->get_partial_payment();
+    	return $partial_payments->sync_db();
+    }
+    
+    
+    //get the partial payment object
+    function get_partial_payment(){
+		if($this->partial_payments instanceof WooPartialPayments) return $this->partial_payments;
+		
+    	if(!class_exists('WooPartialPayments')){
+    		include $this->get_this_directory() . 'class.partial-payments.php';
+    	}
+    	
+    	$this->partial_payments = new WooPartialPayments();
+    	return $this->partial_payments;
     }
 	
 	
