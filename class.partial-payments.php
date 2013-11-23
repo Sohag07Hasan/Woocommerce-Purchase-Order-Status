@@ -62,10 +62,19 @@ class WooPartialPayments{
 	 * @value, value of the column
 	 * */
 	function get_payments_by($column, $value, $output_type = 'OBJECT'){
-		$sql = "select * from $this->db_table where $column like '$value'";
+		$sql = "select * from $this->db_table where $column like '$value' order by date";
 		return $this->wpdb->get_results($sql, $output_type);
 	}
 	
+	
+	/**
+	 * payments by condition
+	 * @where condition for query
+	 * */
+	function get_payments_by_condition($where){
+		$sql = "select * from $this->db_table where {$where} order by date";
+		return $this->wpdb->get_results($sql);
+	}
 	
 }
 

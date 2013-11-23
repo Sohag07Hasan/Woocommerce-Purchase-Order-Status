@@ -9,6 +9,7 @@
 	<form method="get">
 		<input type="hidden" name="woocommerce-payment-status-bulk-action" value="y" />	
 		<input type="hidden" name="page" value="<?php echo $_GET['page']; ?>" />
+		<input type="hidden" name="tab" value="<?php echo $_GET['tab']; ?>">
 		<input type="hidden" name="payment-status" value="payments" />
 		<?php $list_table->display(); ?>
 		

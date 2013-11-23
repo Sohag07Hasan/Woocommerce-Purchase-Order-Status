@@ -309,7 +309,9 @@ class WooPaymentStatusListTable extends WP_List_Table{
 
 					} 
 					
-					elseif($_REQUEST['tab'] == "payments"){
+					elseif($_REQUEST['tab'] == "payments"){ 
+				
+						
 						global $woo_purchase_status;
 						$partial_payment_info = $woo_purchase_status->get_partial_payment_info($_order->id);
 						if(!$partial_payment_info){
@@ -319,8 +321,31 @@ class WooPaymentStatusListTable extends WP_List_Table{
 						$sanitized_info = array();
 												
 						$partial_payments = $woo_purchase_status->get_partial_payment();
-						$partial_payment_info = $partial_payments->get_payments_by('order_id', $_order->id);
 						
+						if(isset($_REQUEST['start-date']) || isset($_REQUEST['end-date']) || isset($_REQUEST['payment_type'])){
+							$where = ' 1=1 ';
+							
+							if(isset($_REQUEST['start-date']) && !empty($_REQUEST['start-date'])){
+								$start_date = date('Y-m-d', strtotime($_REQUEST['start-date']));
+								$where .= " and date >= '$start_date'";
+							}
+							if(isset($_REQUEST['end-date']) && !empty($_REQUEST['end-date'])){
+								$end_date = date('Y-m-d', strtotime($_REQUEST['end-date']));
+								$where .= " and date <= '$end_date'";
+							}
+							
+							if(isset($_REQUEST['payment_type']) && !empty($_REQUEST['payment_type'])){
+								$type = $_REQUEST['payment_type'];
+								$where .= " and type like '$type'";
+							}
+							
+							//var_dump($where); die();
+							
+							$partial_payment_info = $partial_payments->get_payments_by_condition($where);
+						}
+						else{
+							$partial_payment_info = $partial_payments->get_payments_by('order_id', $_order->id);
+						}
 						
 						if($partial_payment_info){
 							foreach($partial_payment_info as $key => $info){
@@ -338,7 +363,7 @@ class WooPaymentStatusListTable extends WP_List_Table{
 										'payment_no' => $payment_number,
 										'payment_type' => $info->type,
 										'payment_date' => date('d/m/Y', strtotime($info->date)),
-										'paid_tax'	=> 'need instructions',
+										'paid_tax'	=> woocommerce_price($info->amount / 11),
 										'paid_amount'	=> woocommerce_price($info->amount),
 									
 									);
@@ -356,7 +381,7 @@ class WooPaymentStatusListTable extends WP_List_Table{
 										'payment_no' => $payment_number,
 										'payment_type' => $info->type,
 										'payment_date' => date('d/m/Y', strtotime($info->date)),
-										'paid_tax'	=> 'need instructions',
+										'paid_tax'	=> woocommerce_price($info->amount / 11),
 										'paid_amount'	=> woocommerce_price($info->amount),
 												
 									);
@@ -533,8 +558,8 @@ class WooPaymentStatusListTable extends WP_List_Table{
 				'posts_per_page' => $this->per_page,
 				'paged' => $this->current_page,
 				'fields' => 'ids',
-				'post_status' => 'publish'	
-			
+				'post_status' => 'publish',
+							
 		);
 	
 		if(isset($_REQUEST['order_status'])){
@@ -545,9 +570,12 @@ class WooPaymentStatusListTable extends WP_List_Table{
 			);
 		}
 	
-		if(isset($_REQUEST['start-date']) || isset($_REQUEST['end-date'])){
-			add_filter( 'posts_where', array(&$this, 'posts_where') );
-		}
+		//if(isset($_REQUEST['start-date']) || isset($_REQUEST['end-date'])){
+			add_filter('posts_join_request', array(&$this, 'posts_join'), 100, 2);
+			add_filter( 'posts_where_request', array(&$this, 'posts_where'), 100, 2);			
+			//add_filter('posts_request', array(&$this, 'posts_request'), 100, 2);
+			add_filter('posts_groupby_request', array(&$this, 'posts_groupby_request'), 100, 2);
+		//}
 	
 	
 		// If payment type is selected
@@ -564,26 +592,48 @@ class WooPaymentStatusListTable extends WP_List_Table{
 		return $args;
 	}
 	
-	function posts_where($where){
-		
-		//var_dump($_REQUEST['start-date']); exit;
+	function posts_groupby_request($group_by, $q){
 		global $wpdb;
+		$group_by = " {$wpdb->posts}.ID ";
+		return $group_by;
+	}
+	
+	function posts_where($where, $q){
+		global $wpdb, $woo_purchase_status;
+		$partial_payments = $woo_purchase_status->get_partial_payment();
 		
-		if(isset($_REQUEST['start-date'])){
-			$date = explode('-', $_REQUEST['start-date']);			
-			$d = $date[2] . '-' . $date[1] . '-' . $date[0];	
-			$where .= " AND {$wpdb->posts}.post_date >= '$d'";
+		if(isset($_REQUEST['start-date']) && !empty($_REQUEST['start-date'])){
+			$start_date = date('Y-m-d', strtotime($_REQUEST['start-date']));		
+			$where .= " AND ({$partial_payments->db_table}.date >= '$start_date')";
 		}
-		if(isset($_REQUEST['end-date'])){
-			$date = explode('-', $_REQUEST['end-date']);			
-			$d = $date[2] . '-' . $date[1] . '-' . $date[0] . ' 21:59:59';	
-			$where .= " AND {$wpdb->posts}.post_date <= '$d'";
+		if(isset($_REQUEST['end-date']) && !empty($_REQUEST['end-date'])){
+			$end_date = date('Y-m-d', strtotime($_REQUEST['end-date']));		
+			$where .= " AND ({$partial_payments->db_table}.date <= '$end_date')";
 		}
 		
-		
+		if(isset($_REQUEST['payment_type']) && !empty($_REQUEST['payment_type'])){
+			$type = $_REQUEST['payment_type'];
+			$where .= " AND ({$partial_payments->db_table}.type like '$type') ";
+		}
 		
 		return $where;
 		
+	}
+	
+	//post join
+	function posts_join($join, $q){
+		global $wpdb, $woo_purchase_status;
+		$partial_payments = $woo_purchase_status->get_partial_payment();
+		
+		if(isset($_REQUEST['start-date']) || isset($_REQUEST['end-date']) || isset($_REQUEST['payment_type'])){
+			$join .= " INNER JOIN $partial_payments->db_table ON ($wpdb->posts.ID = $partial_payments->db_table.order_id) ";
+		}				
+		return $join;
+	}
+	
+	function posts_request($request, $q){
+		var_dump($request);
+		return $request;
 	}
 	
 	
@@ -910,10 +960,10 @@ class WooPaymentStatusListTable extends WP_List_Table{
 			if( $_GET['tab'] != 'unpaid' ) {
 	       		echo "<select id=\"payment_type\" name=\"payment_type\" class=\"chosen_select\">";
 				echo "	<option value=\"\">Select Payment Type</option>";
-				echo "	<option value=\"Credit Card\">Credit Card</option>";
-				echo "	<option value=\"Bank Transfer\">Bank Transfer</option>";
-				echo " 	<option value=\"Cheque\">Cheque</option>";
-				echo "	<option value=\"Cash\">Cash</option>";
+				echo "	<option ".selected('Credit Card', $_REQUEST['payment_type'])." value=\"Credit Card\">Credit Card</option>";
+				echo "	<option ".selected('Bank Transfer', $_REQUEST['payment_type'])." value=\"Bank Transfer\">Bank Transfer</option>";
+				echo " 	<option ".selected('Cheque', $_REQUEST['payment_type'])." value=\"Cheque\">Cheque</option>";
+				echo "	<option ".selected('Cash', $_REQUEST['payment_type'])." value=\"Cash\">Cash</option>";
 				echo "</select>";
 			}
 
