@@ -235,8 +235,6 @@ class WooPaymentStatusListTable extends WP_List_Table{
 				$_order = new WC_Order($order_id);
 				if($_order){
 					
-
-
 					$mylink = $wpdb->get_row("SELECT * FROM wp_followup_customer_orders WHERE order_id = ".$_order->id, ARRAY_A);
 					//echo "<pre>";
 					//print_r($_order);
@@ -348,8 +346,10 @@ class WooPaymentStatusListTable extends WP_List_Table{
 						}
 						
 						if($partial_payment_info){
+							$partial_payments_count = $partial_payments->get_partial_payment_no($_order->id);
+							
 							foreach($partial_payment_info as $key => $info){
-								$payment_number = $key+1 . '/' . count($partial_payment_info);
+								$payment_number = $info->payment_no . '/' . $partial_payments_count;
 								if($key == 0){
 									$sanitized_data[] = array(
 										'ID' => $_order->id,

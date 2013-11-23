@@ -153,7 +153,8 @@ class WooPurchaseOrderPaymentStatus{
 				$data = array(
 					'date' => date('Y-m-d', strtotime(str_replace('/', '-', $date))),
 					'amount' => (float) $_POST['partial-payment-amount'][$key],
-					'type' => $_POST['partial-payment-paymenttype_tracking'][$key]
+					'type' => $_POST['partial-payment-paymenttype_tracking'][$key],
+					'payment_no' => $key + 1 	
 				);
 				
 				$payment_details[] = $data;

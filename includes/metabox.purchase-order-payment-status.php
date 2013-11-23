@@ -37,7 +37,7 @@
 	<?php if($partial_payment_info): foreach($partial_payment_info as $key => $info):	?>
 		
 		<div class="existing-payments-line">
-			<p> <?php echo $key+1; ?>: <span><?php echo $info['date']; ?>  $<?php echo $info['amount']; ?>  <?php echo $info['type']; ?></span> <a class="existing-payments-line-edit" href="#">Edit</a> </p>
+			<p> <?php echo $info['payment_no']; ?>: <span><?php echo $info['date']; ?>  $<?php echo $info['amount']; ?>  <?php echo $info['type']; ?></span> <a class="existing-payments-line-edit" href="#">Edit</a> </p>
 			<div class="existing_partial_paypment-form">
 			<input placeholder="dd/mm/yyyy" type="text" name="partial-payment-date[]" value="<?php echo $info['date']; ?>" style="width: 42%" >
 			<input placeholder="amouont (USD)" type="text" name="partial-payment-amount[]" value="<?php echo $info['amount']; ?>" style="width: 42%" >

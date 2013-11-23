@@ -20,6 +20,7 @@ class WooPartialPayments{
 	function sync_db(){
 		$sql = "create table if not exists $this->db_table(
 			payment_id bigint not null primary key auto_increment,
+			payment_no int not null,
 			order_id bigint not null,
 			date date not null,
 			type varchar(200) not null,
@@ -62,7 +63,7 @@ class WooPartialPayments{
 	 * @value, value of the column
 	 * */
 	function get_payments_by($column, $value, $output_type = 'OBJECT'){
-		$sql = "select * from $this->db_table where $column like '$value' order by date";
+		$sql = "select * from $this->db_table where $column like '$value' order by payment_no";
 		return $this->wpdb->get_results($sql, $output_type);
 	}
 	
@@ -72,8 +73,18 @@ class WooPartialPayments{
 	 * @where condition for query
 	 * */
 	function get_payments_by_condition($where){
-		$sql = "select * from $this->db_table where {$where} order by date";
+		$sql = "select * from $this->db_table where {$where} order by payment_no";
 		return $this->wpdb->get_results($sql);
+	}
+	
+	
+	/**
+	 * get the partial paypments count for an order
+	 * @$order_id specific order
+	 * */
+	function get_partial_payment_no($order_id){
+		$sql = "select COUNT(*) from $this->db_table where order_id = '$order_id'";
+		return $this->wpdb->get_var($sql);
 	}
 	
 }
